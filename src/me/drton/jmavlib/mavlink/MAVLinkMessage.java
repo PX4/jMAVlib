@@ -8,13 +8,13 @@ import java.nio.charset.Charset;
  * User: ton Date: 03.06.14 Time: 12:31
  */
 public class MAVLinkMessage {
-    public final static byte START_OF_FRAME = (byte) 0xFE;
-    public final static int HEADER_LENGTH = 6;
+    public final static byte START_OF_FRAME = (byte) 0xFD;
+    public final static int HEADER_LENGTH = 10;
     public final static int CRC_LENGTH = 2;
     public final static int NON_PAYLOAD_LENGTH = HEADER_LENGTH + CRC_LENGTH;
     private final MAVLinkSchema schema;
     public final MAVLinkMessageDefinition definition;
-    public final int msgID;
+    public int msgID;
     private final byte[] payload;
     private final ByteBuffer payloadBB;
     private byte sequence = 0;
@@ -85,9 +85,13 @@ public class MAVLinkMessage {
             throw new BufferUnderflowException();
         }
         sequence = buffer.get();
+        buffer.get(); // signing flags unused
+        buffer.get(); // signing flage unused
         systemID = buffer.get() & 0xff;
         componentID = buffer.get() & 0xff;
         msgID = buffer.get() & 0xff;
+        msgID = ((buffer.get() & 0xff) << 8)  | msgID;
+        msgID = ((buffer.get() & 0xff) << 16) | msgID;
         this.schema = schema;
         this.definition = schema.getMessageDefinition(msgID);
         if (definition == null) {
@@ -123,10 +127,14 @@ public class MAVLinkMessage {
         buf.order(schema.getByteOrder());
         buf.put(START_OF_FRAME);
         buf.put((byte) definition.payloadLength);
+        buf.put((byte)0); // signing flag unused
+        buf.put((byte)0); // signing flag unused
         buf.put(sequence);
         buf.put((byte) systemID);
         buf.put((byte) componentID);
-        buf.put((byte) msgID);
+        buf.put((byte) (msgID & 0xff));
+        buf.put((byte) ((msgID >> 8)  & 0xff));
+        buf.put((byte) ((msgID >> 16) & 0xff));
         buf.put(payload);
         buf.flip();
         crc = calculateCRC(buf);
