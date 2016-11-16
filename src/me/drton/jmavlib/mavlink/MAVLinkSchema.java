@@ -3,6 +3,7 @@ package me.drton.jmavlib.mavlink;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -15,6 +16,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * User: ton Date: 03.06.14 Time: 12:31
@@ -56,20 +59,35 @@ public class MAVLinkSchema {
             Element msg = (Element) msgElems.item(i);
             int msgID = Integer.parseInt(msg.getAttribute("id"));
             String msgName = msg.getAttribute("name");
-            NodeList fieldsElems = msg.getElementsByTagName("field");
-            MAVLinkField[] fields = new MAVLinkField[fieldsElems.getLength()];
-            for (int j = 0; j < fieldsElems.getLength(); j++) {
-                Element fieldElem = (Element) fieldsElems.item(j);
-                String[] typeStr = fieldElem.getAttribute("type").split("\\[");
-                MAVLinkDataType fieldType = MAVLinkDataType.fromCType(typeStr[0]);
-                int arraySize = -1;
-                if (typeStr.length > 1) {
-                    arraySize = Integer.parseInt(typeStr[1].split("\\]")[0]);
+            NodeList nodeList = msg.getChildNodes();
+            List<MAVLinkField> fields = new ArrayList<MAVLinkField> ();
+            int extensionIndex = -1;
+            for (int j = 0; j < nodeList.getLength(); j++) {
+                Node node = nodeList.item(j);
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                    Element fieldElem = (Element) node;
+                    String name = fieldElem.getNodeName();
+                    if (name == "field") {
+                        String[] typeStr = fieldElem.getAttribute("type").split("\\[");
+                        MAVLinkDataType fieldType = MAVLinkDataType.fromCType(typeStr[0]);
+                        int arraySize = -1;
+                        if (typeStr.length > 1) {
+                            arraySize = Integer.parseInt(typeStr[1].split("\\]")[0]);
+                        }
+                        MAVLinkField field = new MAVLinkField(fieldType, arraySize, fieldElem.getAttribute("name"));
+                        fields.add(field);
+                    } else if (name == "extensions") {
+                        extensionIndex = fields.size();
+                    }
                 }
-                MAVLinkField field = new MAVLinkField(fieldType, arraySize, fieldElem.getAttribute("name"));
-                fields[j] = field;
             }
-            Arrays.sort(fields, new Comparator<MAVLinkField>() {
+            if (extensionIndex == -1) {
+                extensionIndex = fields.size();
+            }
+            int numFields = fields.size();
+            // as per mavparse.py: when we have extensions we only sort up to the first extended field
+            List<MAVLinkField> sortedFields = fields.subList(0, extensionIndex);
+            sortedFields.sort(new Comparator<MAVLinkField>() {
                 @Override
                 public int compare(MAVLinkField field2, MAVLinkField field1) {
                     // Sort on type size
@@ -81,8 +99,13 @@ public class MAVLinkSchema {
                     return 0;
                 }
             });
+            for (int k = extensionIndex; k < numFields; k++) {
+                sortedFields.add(fields.get(k));
+            }
+            fields = sortedFields;
+
             if (msgID >= 0 && msgID < 256) {
-                addMessageDefinition(new MAVLinkMessageDefinition(msgID, msgName, fields));
+                addMessageDefinition(new MAVLinkMessageDefinition(msgID, msgName, fields.toArray(new MAVLinkField[numFields]), extensionIndex));
             }
         }
     }

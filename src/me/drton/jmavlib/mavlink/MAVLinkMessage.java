@@ -95,18 +95,18 @@ public class MAVLinkMessage {
             buffer.position(buffer.position() + payloadLen + CRC_LENGTH);
             throw new MAVLinkUnknownMessage(String.format("Unknown message: %s", msgID));
         }
-        if (payloadLen != definition.payloadLength) {
+        if (payloadLen != definition.payloadLength && payloadLen != definition.payloadMinimumLength) {
             buffer.position(buffer.position() + payloadLen + CRC_LENGTH);
             throw new MAVLinkUnknownMessage(
                     String.format("Invalid payload len for msg %s (%s): %s, should be %s", definition.name, msgID,
-                            payloadLen, definition.payloadLength));
+                            payloadLen, payloadLen));
         }
-        this.payload = new byte[definition.payloadLength];
+        this.payload = new byte[payloadLen];
         buffer.get(payload);
         crc = Short.reverseBytes(buffer.getShort()) & 0xffff;
         int endPos = buffer.position();
         buffer.position(startPos);
-        int crcCalc = calculateCRC(buffer);
+        int crcCalc = calculateCRC(buffer, payloadLen);
         buffer.position(endPos);
         if (crc != crcCalc) {
             throw new MAVLinkUnknownMessage(
@@ -122,14 +122,14 @@ public class MAVLinkMessage {
         ByteBuffer buf = ByteBuffer.allocate(payload.length + NON_PAYLOAD_LENGTH);
         buf.order(schema.getByteOrder());
         buf.put(START_OF_FRAME);
-        buf.put((byte) definition.payloadLength);
+        buf.put((byte) payload.length);
         buf.put(sequence);
         buf.put((byte) systemID);
         buf.put((byte) componentID);
         buf.put((byte) msgID);
         buf.put(payload);
         buf.flip();
-        crc = calculateCRC(buf);
+        crc = calculateCRC(buf, payload.length);
         buf.limit(buf.capacity());
         buf.put((byte) crc);
         buf.put((byte) (crc >> 8));
@@ -143,10 +143,10 @@ public class MAVLinkMessage {
      * @param buf
      * @return CRC
      */
-    private int calculateCRC(ByteBuffer buf) {
+    private int calculateCRC(ByteBuffer buf, int payloadLen) {
         buf.get();  // Skip start sign
         int c = 0xFFFF;
-        for (int i = 0; i < definition.payloadLength + HEADER_LENGTH - 1; i++) {
+        for (int i = 0; i < payloadLen + HEADER_LENGTH - 1; i++) {
             c = MAVLinkCRC.accumulateCRC(buf.get(), c);
         }
         c = MAVLinkCRC.accumulateCRC(definition.extraCRC, c);
