@@ -439,8 +439,13 @@ public class ULogReader extends BinaryLogReader {
                 buffer.position(buffer.position() + msgSize); //skip this message
                 continue;
             default:
-                buffer.position(buffer.position() + msgSize);
-                errors.add(new FormatErrorException(pos, "Unknown message type: " + msgType));
+                if (msgSize == 0 && msgType == 0) {
+                    // This is an error (corrupt file): likely the file is filled with zeros from this point on.
+                    // Not much we can do except to ensure that we make progress and don't spam the error console.
+                } else {
+                    buffer.position(buffer.position() + msgSize);
+                    errors.add(new FormatErrorException(pos, "Unknown message type: " + msgType));
+                }
                 continue;
             }
             int sizeParsed = (int) (position() - pos - HDRLEN);
