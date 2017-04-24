@@ -476,95 +476,15 @@ public class ULogReader extends BinaryLogReader {
             System.exit(0);
         }
         // write all parameters to a gnu Octave data file
-        FileWriter fileWriter = new FileWriter(new File(basePath + File.separator + "parameters.text"));
+        System.out.printf("creating %s\n", basePath + File.separator + "parameters.octave");
+        FileWriter fileWriter = new FileWriter(new File(basePath + File.separator + "parameters.octave"));
         Map<String, Object> tmap = new TreeMap<String, Object>(reader.parameters);
         Set pSet = tmap.entrySet();
         for (Object aPSet : pSet) {
             Map.Entry param = (Map.Entry) aPSet;
-            fileWriter.write(String.format("# name: %s\n#type: scalar\n%s\n", param.getKey(), param.getValue()));
+            fileWriter.write(String.format("#name: %s\n#type: scalar\n%s\n", param.getKey(), param.getValue()));
         }
         fileWriter.close();
-        long tStart = System.currentTimeMillis();
-        double last_t = 0;
-        double last_p = 0;
-        Map<String, PrintStream> ostream = new HashMap<String, PrintStream>();
-        Map<String, Double> lastTimeStamp = new HashMap<String, Double>();
-        double min_dt = 1;
-        while (true) {
-//            try {
-//                Object msg = reader.readMessage();
-//                System.out.println(msg);
-//            } catch (EOFException e) {
-//                break;
-//            }
-            Map<String, Object> update = new HashMap<String, Object>();
-            try {
-                long t = reader.readUpdate(update);
-                double tsec = (double)t / 1e6;
-                if (tsec > (last_p + 1)) {
-                    last_p = tsec;
-                    System.out.printf("%8.0f\n", tsec);
-                }
-                // keys in Map "update" are fieldnames beginning with the topic name e.g. SENSOR_GYRO_0.someField
-                // Create a printstream for each topic when it is first encountered
-                Set<String> keySet = update.keySet();
-                String stream = keySet.iterator().next().split("\\.")[0];
-                if (!ostream.containsKey(stream)) {
-                    System.out.println("creating stream " + stream);
-                    PrintStream newStream = new PrintStream(basePath + File.separator + stream + ".csv");
-                    ostream.put(stream, newStream);
-                    lastTimeStamp.put(stream, tsec);
-                    Iterator<String> keys = keySet.iterator();
-                    newStream.print("timestamp");
-                    while (keys.hasNext()) {
-                        String fieldName = keys.next();
-                        if (!fieldName.contains("_padding") && fieldName != "timestamp") {
-                            newStream.print(',');
-                            newStream.print(fieldName);
-                        }
-                    }
-                    newStream.println();
-                }
-                // append this record to output stream
-                PrintStream curStream = ostream.get(stream);
-                // timestamp is always first entry in record
-                curStream.print(t);
-                // for each non-padding field, print value
-                Iterator<String> keys = keySet.iterator();
-                while (keys.hasNext()) {
-                    String fieldName = keys.next();
-                    if (!fieldName.contains("_padding") && fieldName != "timestamp") {
-                        curStream.print(',');
-                        curStream.print(update.get(fieldName));
-                    }
-                }
-//                for (Object field: update.values()) {
-//                    curStream.print(',');
-//                    curStream.print(field.toString());
-//                }
-                curStream.println();
-                // check gyro stream for dropouts
-                if (stream.startsWith("SENSOR_GYRO")) {
-                    double dt = tsec - lastTimeStamp.get(stream);
-                    double rdt = Math.rint(1000*dt) / 1000;
-                    if ((dt > 0) && (rdt < min_dt)) {
-                        min_dt = rdt;
-                        System.out.println("rdt: " + rdt);
-                    }
-                    if (dt > (5 * min_dt)) {
-                        System.out.println("gyro dropout: " + lastTimeStamp.get(stream) + ", length: " + dt);
-                    }
-                    lastTimeStamp.put(stream, tsec);
-                }
-            } catch (EOFException e) {
-                break;
-            }
-        }
-        long tEnd = System.currentTimeMillis();
-        for (Exception e : reader.getErrors()) {
-            e.printStackTrace();
-        }
-        System.out.println(tEnd - tStart);
         reader.close();
     }
 
