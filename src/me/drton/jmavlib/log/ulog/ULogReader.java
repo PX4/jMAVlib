@@ -25,14 +25,18 @@ public class ULogReader extends BinaryLogReader {
     static final byte MESSAGE_TYPE_FORMAT = (byte) 'F';
     static final byte MESSAGE_TYPE_DATA = (byte) 'D';
     static final byte MESSAGE_TYPE_INFO = (byte) 'I';
+    static final byte MESSAGE_TYPE_INFO_MULTIPLE = (byte) 'M';
     static final byte MESSAGE_TYPE_PARAMETER = (byte) 'P';
     static final byte MESSAGE_TYPE_ADD_LOGGED_MSG = (byte) 'A';
     static final byte MESSAGE_TYPE_REMOVE_LOGGED_MSG = (byte) 'R';
     static final byte MESSAGE_TYPE_SYNC = (byte) 'S';
     static final byte MESSAGE_TYPE_DROPOUT = (byte) 'O';
     static final byte MESSAGE_TYPE_LOG = (byte) 'L';
+    static final byte MESSAGE_TYPE_FLAG_BITS = (byte) 'B';
     static final int HDRLEN = 3;
     static final int FILE_MAGIC_HEADER_LENGTH = 16;
+
+    static final int INCOMPAT_FLAG0_DATA_APPENDED_MASK = 1<<0;
 
     private String systemName = "PX4";
     private long dataStart = 0;
@@ -60,6 +64,11 @@ public class ULogReader extends BinaryLogReader {
     private Map<String, Object> version = new HashMap<String, Object>();
     private Map<String, Object> parameters = new HashMap<String, Object>();
     public ArrayList<MessageLog> loggedMessages = new ArrayList<MessageLog>();
+
+    private String hardfaultPlainText = "";
+
+    private Vector<Long> appendedOffsets = new Vector<Long>();
+    int currentAppendingOffsetIndex = 0; // current index to appendedOffsets for the next appended offset
 
     public Map<String, List<ParamUpdate>> parameterUpdates;
     private boolean replayedLog = false;
@@ -171,7 +180,7 @@ public class ULogReader extends BinaryLogReader {
             error = true;
         if ((buffer.get() & 0xFF) != 0x35)
             error = true;
-        if ((buffer.get() & 0xFF) != 0x00 && !error) {
+        if ((buffer.get() & 0xFF) > 0x01 && !error) {
             System.out.println("ULog: Different version than expected. Will try anyway");
         }
         if (error)
@@ -206,7 +215,31 @@ public class ULogReader extends BinaryLogReader {
             }
             packetsNum++;
 
-            if (msg instanceof MessageFormat) {
+            if (msg instanceof MessageFlagBits) {
+                MessageFlagBits msgFlags = (MessageFlagBits) msg;
+                // check flags
+                if ((msgFlags.incompatFlags[0] & INCOMPAT_FLAG0_DATA_APPENDED_MASK) != 0) {
+                    for (int i = 0; i < msgFlags.appendedOffsets.length; ++i) {
+                        if (msgFlags.appendedOffsets[i] > 0) {
+                            appendedOffsets.add(msgFlags.appendedOffsets[i]);
+                        }
+                    }
+                    if (appendedOffsets.size() > 0) {
+                        System.out.println("log contains appended data");
+                    }
+                }
+                boolean containsUnknownIncompatBits = false;
+                if ((msgFlags.incompatFlags[0] & ~0x1) != 0)
+                    containsUnknownIncompatBits = true;
+                for (int i = 1; i < msgFlags.incompatFlags.length; ++i) {
+                    if (msgFlags.incompatFlags[i] != 0)
+                        containsUnknownIncompatBits = true;
+                }
+                if (containsUnknownIncompatBits) {
+                    throw new FormatErrorException("Log contains unknown incompatible bits. Refusing to parse the log.");
+                }
+
+            } else if (msg instanceof MessageFormat) {
                 MessageFormat msgFormat = (MessageFormat) msg;
                 messageFormats.put(msgFormat.name, msgFormat);
 
@@ -269,6 +302,13 @@ public class ULogReader extends BinaryLogReader {
                 } else if ("replay".equals(msgInfo.getKey())) {
                     replayedLog = true;
                 }
+            } else if (msg instanceof MessageInfoMultiple) {
+                MessageInfoMultiple msgInfo = (MessageInfoMultiple) msg;
+                //System.out.println(msgInfo.getKey());
+                if ("hardfault_plain".equals(msgInfo.getKey())) {
+                    // append all hardfaults to one String (we should be looking at msgInfo.isContinued as well)
+                    hardfaultPlainText += (String)msgInfo.value;
+                }
 
             } else if (msg instanceof MessageData) {
                 if (dataStart == 0) {
@@ -324,11 +364,19 @@ public class ULogReader extends BinaryLogReader {
             }
             errors.clear();
         }
+
+        if (hardfaultPlainText.length() > 0) {
+            // TODO: find a better way to show this to the user?
+            System.out.println("Log contains hardfault data:");
+            System.out.println(hardfaultPlainText);
+        }
     }
 
     @Override
     public boolean seek(long seekTime) throws IOException, FormatErrorException {
         position(dataStart);
+        currentAppendingOffsetIndex = 0;
+
         if (seekTime == 0) {      // Seek to start of log
             return true;
         }
@@ -338,6 +386,8 @@ public class ULogReader extends BinaryLogReader {
         for (SeekTime sk : seekTimes) {
             if (sk.timestamp >= seekTime) {
                 position(sk.position);
+                while(currentAppendingOffsetIndex < appendedOffsets.size() && appendedOffsets.get(currentAppendingOffsetIndex) < sk.position)
+                    ++currentAppendingOffsetIndex;
                 return true;
             }
         }
@@ -393,6 +443,17 @@ public class ULogReader extends BinaryLogReader {
             int s2 = buffer.get() & 0xFF;
             int msgSize = s1 + (256 * s2);
             int msgType = buffer.get() & 0xFF;
+
+            // check if we cross an appending boundary: if so, we need to reset the position and skip this message
+            if (currentAppendingOffsetIndex < appendedOffsets.size()) {
+                if (pos + HDRLEN + msgSize > appendedOffsets.get(currentAppendingOffsetIndex)) {
+                    //System.out.println("Jumping to next position: "+pos + ", next: "+appendedOffsets.get(currentAppendingOffsetIndex));
+                    position(appendedOffsets.get(currentAppendingOffsetIndex));
+                    ++currentAppendingOffsetIndex;
+                    continue;
+                }
+            }
+
             try {
                 fillBuffer(msgSize);
             } catch (EOFException e) {
@@ -416,8 +477,14 @@ public class ULogReader extends BinaryLogReader {
                 }
                 msg = new MessageData(subscription.format, buffer, subscription.multiID);
                 break;
+            case MESSAGE_TYPE_FLAG_BITS:
+                msg = new MessageFlagBits(buffer, msgSize);
+                break;
             case MESSAGE_TYPE_INFO:
                 msg = new MessageInfo(buffer);
+                break;
+            case MESSAGE_TYPE_INFO_MULTIPLE:
+                msg = new MessageInfoMultiple(buffer);
                 break;
             case MESSAGE_TYPE_PARAMETER:
                 msg = new MessageParameter(buffer);
