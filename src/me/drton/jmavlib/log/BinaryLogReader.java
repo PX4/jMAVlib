@@ -16,7 +16,7 @@ public abstract class BinaryLogReader implements LogReader {
     protected long channelPosition = 0;
 
     public BinaryLogReader(String fileName) throws IOException {
-        buffer = ByteBuffer.allocate(8192);
+        buffer = ByteBuffer.allocate(65536);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.flip();
         channel = new RandomAccessFile(fileName, "r").getChannel();
