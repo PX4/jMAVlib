@@ -69,7 +69,7 @@ public class MAVLinkMessage {
      * @param schema
      */
     public MAVLinkMessage(MAVLinkSchema schema, ByteBuffer buffer)
-            throws MAVLinkProtocolException, MAVLinkUnknownMessage, BufferUnderflowException {
+    throws MAVLinkProtocolException, MAVLinkUnknownMessage, BufferUnderflowException {
         if (buffer.remaining() < NON_PAYLOAD_LENGTH) {
             throw new BufferUnderflowException();
         }
@@ -77,7 +77,7 @@ public class MAVLinkMessage {
         byte startSign = buffer.get();
         if (startSign != START_OF_FRAME) {
             throw new MAVLinkProtocolException(
-                    String.format("Invalid start sign: %02x, should be %02x", startSign, START_OF_FRAME));
+                String.format("Invalid start sign: %02x, should be %02x", startSign, START_OF_FRAME));
         }
         int payloadLen = buffer.get() & 0xff;
         if (buffer.remaining() < payloadLen + NON_PAYLOAD_LENGTH - 2) { // 2 bytes was read already
@@ -98,8 +98,8 @@ public class MAVLinkMessage {
         if (payloadLen != definition.payloadLength && payloadLen != definition.payloadMinimumLength) {
             buffer.position(buffer.position() + payloadLen + CRC_LENGTH);
             throw new MAVLinkUnknownMessage(
-                    String.format("Invalid payload len for msg %s (%s): %s, should be %s", definition.name, msgID,
-                            payloadLen, payloadLen));
+                String.format("Invalid payload len for msg %s (%s): %s, should be %s", definition.name, msgID,
+                              payloadLen, payloadLen));
         }
         this.payload = new byte[payloadLen];
         buffer.get(payload);
@@ -110,8 +110,8 @@ public class MAVLinkMessage {
         buffer.position(endPos);
         if (crc != crcCalc) {
             throw new MAVLinkUnknownMessage(
-                    String.format("CRC error for msg %s (%s): %02x, should be %02x", definition.name, msgID, crc,
-                            crcCalc));
+                String.format("CRC error for msg %s (%s): %02x, should be %02x", definition.name, msgID, crc,
+                              crcCalc));
         }
         this.payloadBB = ByteBuffer.wrap(payload);
         payloadBB.order(schema.getByteOrder());
@@ -132,7 +132,7 @@ public class MAVLinkMessage {
         crc = calculateCRC(buf, payload.length);
         buf.limit(buf.capacity());
         buf.put((byte) crc);
-        buf.put((byte) (crc >> 8));
+        buf.put((byte)(crc >> 8));
         buf.flip();
         return buf;
     }
@@ -349,7 +349,8 @@ public class MAVLinkMessage {
             sb.append(get(field));
             sb.append(" ");
         }
-        return String.format("<MAVLinkMessage %s seq=%s sysID=%s compID=%s ID=%s CRC=%04x %s/>", definition.name,
-                sequence & 0xff, systemID, componentID, msgID, crc, sb.toString());
+        return String.format("<MAVLinkMessage %s seq=%s sysID=%s compID=%s ID=%s CRC=%04x %s/>",
+                             definition.name,
+                             sequence & 0xff, systemID, componentID, msgID, crc, sb.toString());
     }
 }

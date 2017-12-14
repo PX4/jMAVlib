@@ -21,6 +21,7 @@ public class MessageInfoMultiple {
 
     @Override
     public String toString() {
-        return String.format("INFO_MULTI: key=%s, value_type=%s, value=%s", format.name, format.getFullTypeString(), value);
+        return String.format("INFO_MULTI: key=%s, value_type=%s, value=%s", format.name,
+                             format.getFullTypeString(), value);
     }
 }

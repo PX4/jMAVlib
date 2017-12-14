@@ -14,13 +14,15 @@ public class MessageData {
     private final List<Object> data;
     public final int multiID;
 
-    public MessageData(MessageFormat format, ByteBuffer buffer, int multiID) throws FormatErrorException {
+    public MessageData(MessageFormat format, ByteBuffer buffer,
+                       int multiID) throws FormatErrorException {
         this.format = format;
         this.data = format.parseBody(buffer);
         this.multiID = multiID;
         Object t = get("timestamp");
-        if (t == null)
+        if (t == null) {
             throw new FormatErrorException("Message " + format.name + " has no timestamp field");
+        }
 
         //TODO: parse non-64bit timestamp (depending on field type) & handle wrap-arounds
         timestamp = ((Number) t).longValue();
@@ -37,6 +39,7 @@ public class MessageData {
 
     @Override
     public String toString() {
-        return String.format("DATA: t=%s multi_id=%s, name=%s, data=%s", timestamp, multiID, format.name, data);
+        return String.format("DATA: t=%s multi_id=%s, name=%s, data=%s", timestamp, multiID, format.name,
+                             data);
     }
 }

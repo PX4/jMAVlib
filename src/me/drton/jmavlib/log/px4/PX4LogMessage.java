@@ -29,6 +29,7 @@ public class PX4LogMessage {
 
     @Override
     public String toString() {
-        return String.format("PX4LogMessage: type=%s, name=%s, data=%s", description.type, description.name, data);
+        return String.format("PX4LogMessage: type=%s, name=%s, data=%s", description.type, description.name,
+                             data);
     }
 }

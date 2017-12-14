@@ -21,9 +21,11 @@ public class MAVLinkLogReader implements LogReader {
     private long startMicroseconds = -1;
     private Set<Integer> skipMsgs = new HashSet<Integer>();
 
-    public MAVLinkLogReader(String fileName, MAVLinkSchema schema) throws IOException, FormatErrorException {
-        String[] skipMsgNames = new String[]{
-                "PARAM_REQUEST_READ", "PARAM_REQUEST_LIST", "PARAM_VALUE", "PARAM_SET", "PARAM_VALUE",};
+    public MAVLinkLogReader(String fileName, MAVLinkSchema schema) throws IOException,
+        FormatErrorException {
+        String[] skipMsgNames = new String[] {
+            "PARAM_REQUEST_READ", "PARAM_REQUEST_LIST", "PARAM_VALUE", "PARAM_SET", "PARAM_VALUE",
+        };
         for (String msgName : skipMsgNames) {
             MAVLinkMessageDefinition definition = schema.getMessageDefinition(msgName);
             if (definition != null) {

@@ -45,7 +45,7 @@ public class GlobalPositionProjector {
         double y = k * cos_lat * sin(lon_rad - lon0) * r_earth;
         double x = k * (cos_lat0 * sin_lat - sin_lat0 * cos_lat * cos_d_lon) * r_earth;
         double z = alt0 - p.alt;
-        return new double[]{x, y, z};
+        return new double[] {x, y, z};
     }
 
     public LatLonAlt reproject(double[] v) {

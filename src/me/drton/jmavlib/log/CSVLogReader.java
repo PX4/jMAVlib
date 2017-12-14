@@ -84,7 +84,7 @@ public class CSVLogReader implements LogReader {
 
             if (values.length > columnTime) {
                 double v = Double.parseDouble(values[columnTime].replace(',', '.'));
-                long t = (long) (v * 1000000);
+                long t = (long)(v * 1000000);
                 if (timeStart < 0) {
                     timeStart = t;
                 }
@@ -106,7 +106,7 @@ public class CSVLogReader implements LogReader {
             if (i < fields.length && !fields[i].isEmpty()) {
                 double v = Double.parseDouble(values[i].replace(',', '.'));
                 if (i == columnTime) {
-                    t = (long) (v * 1000000);
+                    t = (long)(v * 1000000);
                 } else {
                     update.put(fields[i], v);
                 }

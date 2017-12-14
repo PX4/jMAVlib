@@ -30,7 +30,7 @@ public class ULogReader extends BinaryLogReader {
     static final int HDRLEN = 3;
     static final int FILE_MAGIC_HEADER_LENGTH = 16;
 
-    static final int INCOMPAT_FLAG0_DATA_APPENDED_MASK = 1<<0;
+    static final int INCOMPAT_FLAG0_DATA_APPENDED_MASK = 1 << 0;
 
     private String systemName = "PX4";
     private long dataStart = 0;
@@ -62,7 +62,8 @@ public class ULogReader extends BinaryLogReader {
     private String hardfaultPlainText = "";
 
     private Vector<Long> appendedOffsets = new Vector<Long>();
-    int currentAppendingOffsetIndex = 0; // current index to appendedOffsets for the next appended offset
+    int currentAppendingOffsetIndex =
+        0; // current index to appendedOffsets for the next appended offset
 
     public Map<String, List<ParamUpdate>> parameterUpdates;
     private boolean replayedLog = false;
@@ -152,7 +153,7 @@ public class ULogReader extends BinaryLogReader {
 
     /**
      * Read and parse the file header.
-     * 
+     *
      * @throws IOException
      * @throws FormatErrorException
      */
@@ -160,25 +161,33 @@ public class ULogReader extends BinaryLogReader {
         fillBuffer(FILE_MAGIC_HEADER_LENGTH);
         //magic + version
         boolean error = false;
-        if ((buffer.get() & 0xFF) != 'U')
+        if ((buffer.get() & 0xFF) != 'U') {
             error = true;
-        if ((buffer.get() & 0xFF) != 'L')
+        }
+        if ((buffer.get() & 0xFF) != 'L') {
             error = true;
-        if ((buffer.get() & 0xFF) != 'o')
+        }
+        if ((buffer.get() & 0xFF) != 'o') {
             error = true;
-        if ((buffer.get() & 0xFF) != 'g')
+        }
+        if ((buffer.get() & 0xFF) != 'g') {
             error = true;
-        if ((buffer.get() & 0xFF) != 0x01)
+        }
+        if ((buffer.get() & 0xFF) != 0x01) {
             error = true;
-        if ((buffer.get() & 0xFF) != 0x12)
+        }
+        if ((buffer.get() & 0xFF) != 0x12) {
             error = true;
-        if ((buffer.get() & 0xFF) != 0x35)
+        }
+        if ((buffer.get() & 0xFF) != 0x35) {
             error = true;
+        }
         if ((buffer.get() & 0xFF) > 0x01 && !error) {
             System.out.println("ULog: Different version than expected. Will try anyway");
         }
-        if (error)
+        if (error) {
             throw new FormatErrorException("ULog: Wrong file format");
+        }
 
         logStartTimestamp = buffer.getLong();
     }
@@ -186,7 +195,7 @@ public class ULogReader extends BinaryLogReader {
     /**
      * Read all necessary information from the file, including message formats,
      * seeking positions and log file information.
-     * 
+     *
      * @throws IOException
      * @throws FormatErrorException
      */
@@ -223,11 +232,13 @@ public class ULogReader extends BinaryLogReader {
                     }
                 }
                 boolean containsUnknownIncompatBits = false;
-                if ((msgFlags.incompatFlags[0] & ~0x1) != 0)
+                if ((msgFlags.incompatFlags[0] & ~0x1) != 0) {
                     containsUnknownIncompatBits = true;
+                }
                 for (int i = 1; i < msgFlags.incompatFlags.length; ++i) {
-                    if (msgFlags.incompatFlags[i] != 0)
+                    if (msgFlags.incompatFlags[i] != 0) {
                         containsUnknownIncompatBits = true;
+                    }
                 }
                 if (containsUnknownIncompatBits) {
                     throw new FormatErrorException("Log contains unknown incompatible bits. Refusing to parse the log.");
@@ -252,27 +263,32 @@ public class ULogReader extends BinaryLogReader {
                 }
                 MessageAddLogged msgAddLogged = (MessageAddLogged) msg;
                 MessageFormat msgFormat = messageFormats.get(msgAddLogged.name);
-                if(msgFormat == null)
+                if (msgFormat == null) {
                     throw new FormatErrorException("Format of subscribed message not found: " + msgAddLogged.name);
+                }
                 Subscription subscription = new Subscription(msgFormat, msgAddLogged.multiID);
                 if (msgAddLogged.msgID < messageSubscriptions.size()) {
                     messageSubscriptions.set(msgAddLogged.msgID, subscription);
                 } else {
-                    while (msgAddLogged.msgID > messageSubscriptions.size())
+                    while (msgAddLogged.msgID > messageSubscriptions.size()) {
                         messageSubscriptions.add(null);
+                    }
                     messageSubscriptions.add(subscription);
                 }
-                if (msgAddLogged.multiID > msgFormat.maxMultiID)
+                if (msgAddLogged.multiID > msgFormat.maxMultiID) {
                     msgFormat.maxMultiID = msgAddLogged.multiID;
+                }
 
             } else if (msg instanceof MessageParameter) {
                 MessageParameter msgParam = (MessageParameter) msg;
                 // a replayed log can contain many parameter updates, so we ignore them here
                 if (parameters.containsKey(msgParam.getKey()) && !replayedLog) {
-                    System.out.println("update to parameter: " + msgParam.getKey() + " value: " + msgParam.value + " at t = " + lastTime);
+                    System.out.println("update to parameter: " + msgParam.getKey() + " value: " + msgParam.value +
+                                       " at t = " + lastTime);
                     // maintain a record of parameters which change during flight
                     if (parameterUpdates.containsKey(msgParam.getKey())) {
-                        parameterUpdates.get(msgParam.getKey()).add(new ParamUpdate(msgParam.getKey(), msgParam.value, lastTime));
+                        parameterUpdates.get(msgParam.getKey()).add(new ParamUpdate(msgParam.getKey(), msgParam.value,
+                                                                                    lastTime));
                     } else {
                         List<ParamUpdate> updateList = new ArrayList<ParamUpdate>();
                         updateList.add(new ParamUpdate(msgParam.getKey(), msgParam.value, lastTime));
@@ -292,7 +308,7 @@ public class ULogReader extends BinaryLogReader {
                 } else if ("ver_sw".equals(msgInfo.getKey())) {
                     version.put("FW", msgInfo.value);
                 } else if ("time_ref_utc".equals(msgInfo.getKey())) {
-                    utcTimeReference = ((long) ((Number) msgInfo.value).intValue()) * 1000 * 1000;
+                    utcTimeReference = ((long)((Number) msgInfo.value).intValue()) * 1000 * 1000;
                 } else if ("replay".equals(msgInfo.getKey())) {
                     replayedLog = true;
                 }
@@ -314,7 +330,7 @@ public class ULogReader extends BinaryLogReader {
                 if (timeStart < 0) {
                     timeStart = msgData.timestamp;
                 }
-                if (timeEnd < msgData.timestamp) timeEnd = msgData.timestamp;
+                if (timeEnd < msgData.timestamp) { timeEnd = msgData.timestamp; }
                 lastTime = msgData.timestamp;
             } else if (msg instanceof MessageLog) {
                 MessageLog msgLog = (MessageLog) msg;
@@ -380,8 +396,10 @@ public class ULogReader extends BinaryLogReader {
         for (SeekTime sk : seekTimes) {
             if (sk.timestamp >= seekTime) {
                 position(sk.position);
-                while(currentAppendingOffsetIndex < appendedOffsets.size() && appendedOffsets.get(currentAppendingOffsetIndex) < sk.position)
+                while (currentAppendingOffsetIndex < appendedOffsets.size() &&
+                        appendedOffsets.get(currentAppendingOffsetIndex) < sk.position) {
                     ++currentAppendingOffsetIndex;
+                }
                 return true;
             }
         }
@@ -456,62 +474,64 @@ public class ULogReader extends BinaryLogReader {
             }
             Object msg;
             switch (msgType) {
-            case MESSAGE_TYPE_DATA:
-                s1 = buffer.get() & 0xFF;
-                s2 = buffer.get() & 0xFF;
-                int msgID = s1 + (256 * s2);
-                Subscription subscription = null;
-                if (msgID < messageSubscriptions.size())
-                    subscription = messageSubscriptions.get(msgID);
-                if (subscription == null) {
-                    position(pos);
-                    errors.add(new FormatErrorException(pos, "Unknown DATA subscription ID: " + msgID));
-                    buffer.position(buffer.position() + msgSize - 1);
+                case MESSAGE_TYPE_DATA:
+                    s1 = buffer.get() & 0xFF;
+                    s2 = buffer.get() & 0xFF;
+                    int msgID = s1 + (256 * s2);
+                    Subscription subscription = null;
+                    if (msgID < messageSubscriptions.size()) {
+                        subscription = messageSubscriptions.get(msgID);
+                    }
+                    if (subscription == null) {
+                        position(pos);
+                        errors.add(new FormatErrorException(pos, "Unknown DATA subscription ID: " + msgID));
+                        buffer.position(buffer.position() + msgSize - 1);
+                        continue;
+                    }
+                    msg = new MessageData(subscription.format, buffer, subscription.multiID);
+                    break;
+                case MESSAGE_TYPE_FLAG_BITS:
+                    msg = new MessageFlagBits(buffer, msgSize);
+                    break;
+                case MESSAGE_TYPE_INFO:
+                    msg = new MessageInfo(buffer);
+                    break;
+                case MESSAGE_TYPE_INFO_MULTIPLE:
+                    msg = new MessageInfoMultiple(buffer);
+                    break;
+                case MESSAGE_TYPE_PARAMETER:
+                    msg = new MessageParameter(buffer);
+                    break;
+                case MESSAGE_TYPE_FORMAT:
+                    msg = new MessageFormat(buffer, msgSize);
+                    break;
+                case MESSAGE_TYPE_ADD_LOGGED_MSG:
+                    msg = new MessageAddLogged(buffer, msgSize);
+                    break;
+                case MESSAGE_TYPE_DROPOUT:
+                    msg = new MessageDropout(buffer);
+                    break;
+                case MESSAGE_TYPE_LOG:
+                    msg = new MessageLog(buffer, msgSize);
+                    break;
+                case MESSAGE_TYPE_REMOVE_LOGGED_MSG:
+                case MESSAGE_TYPE_SYNC:
+                    buffer.position(buffer.position() + msgSize); //skip this message
                     continue;
-                }
-                msg = new MessageData(subscription.format, buffer, subscription.multiID);
-                break;
-            case MESSAGE_TYPE_FLAG_BITS:
-                msg = new MessageFlagBits(buffer, msgSize);
-                break;
-            case MESSAGE_TYPE_INFO:
-                msg = new MessageInfo(buffer);
-                break;
-            case MESSAGE_TYPE_INFO_MULTIPLE:
-                msg = new MessageInfoMultiple(buffer);
-                break;
-            case MESSAGE_TYPE_PARAMETER:
-                msg = new MessageParameter(buffer);
-                break;
-            case MESSAGE_TYPE_FORMAT:
-                msg = new MessageFormat(buffer, msgSize);
-                break;
-            case MESSAGE_TYPE_ADD_LOGGED_MSG:
-                msg = new MessageAddLogged(buffer, msgSize);
-                break;
-            case MESSAGE_TYPE_DROPOUT:
-                msg = new MessageDropout(buffer);
-                break;
-            case MESSAGE_TYPE_LOG:
-                msg = new MessageLog(buffer, msgSize);
-                break;
-            case MESSAGE_TYPE_REMOVE_LOGGED_MSG:
-            case MESSAGE_TYPE_SYNC:
-                buffer.position(buffer.position() + msgSize); //skip this message
-                continue;
-            default:
-                if (msgSize == 0 && msgType == 0) {
-                    // This is an error (corrupt file): likely the file is filled with zeros from this point on.
-                    // Not much we can do except to ensure that we make progress and don't spam the error console.
-                } else {
-                    buffer.position(buffer.position() + msgSize);
-                    errors.add(new FormatErrorException(pos, "Unknown message type: " + msgType));
-                }
-                continue;
+                default:
+                    if (msgSize == 0 && msgType == 0) {
+                        // This is an error (corrupt file): likely the file is filled with zeros from this point on.
+                        // Not much we can do except to ensure that we make progress and don't spam the error console.
+                    } else {
+                        buffer.position(buffer.position() + msgSize);
+                        errors.add(new FormatErrorException(pos, "Unknown message type: " + msgType));
+                    }
+                    continue;
             }
-            int sizeParsed = (int) (position() - pos - HDRLEN);
+            int sizeParsed = (int)(position() - pos - HDRLEN);
             if (sizeParsed != msgSize) {
-                errors.add(new FormatErrorException(pos, "Message size mismatch, parsed: " + sizeParsed + ", msg size: " + msgSize));
+                errors.add(new FormatErrorException(pos,
+                                                    "Message size mismatch, parsed: " + sizeParsed + ", msg size: " + msgSize));
                 buffer.position(buffer.position() + msgSize - sizeParsed);
             }
             return msg;
@@ -542,7 +562,8 @@ public class ULogReader extends BinaryLogReader {
         Set pSet = tmap.entrySet();
         for (Object aPSet : pSet) {
             Map.Entry param = (Map.Entry) aPSet;
-            fileWriter.write(String.format("# name: %s\n#type: scalar\n%s\n", param.getKey(), param.getValue()));
+            fileWriter.write(String.format("# name: %s\n#type: scalar\n%s\n", param.getKey(),
+                                           param.getValue()));
         }
         fileWriter.close();
         long tStart = System.currentTimeMillis();
@@ -607,7 +628,7 @@ public class ULogReader extends BinaryLogReader {
                 // check gyro stream for dropouts
                 if (stream.startsWith("SENSOR_GYRO")) {
                     double dt = tsec - lastTimeStamp.get(stream);
-                    double rdt = Math.rint(1000*dt) / 1000;
+                    double rdt = Math.rint(1000 * dt) / 1000;
                     if ((dt > 0) && (rdt < min_dt)) {
                         min_dt = rdt;
                         System.out.println("rdt: " + rdt);

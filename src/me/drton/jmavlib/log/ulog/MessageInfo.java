@@ -21,6 +21,7 @@ public class MessageInfo {
 
     @Override
     public String toString() {
-        return String.format("INFO: key=%s, value_type=%s, value=%s", format.name, format.getFullTypeString(), value);
+        return String.format("INFO: key=%s, value_type=%s, value=%s", format.name,
+                             format.getFullTypeString(), value);
     }
 }

@@ -21,6 +21,7 @@ public class MessageFlagBits {
 
     @Override
     public String toString() {
-        return String.format("FlagBits: compat[0]=%i, incompat[0]=%i, offset[0]=%li", compatFlags[0], incompatFlags[0], appendedOffsets[0]);
+        return String.format("FlagBits: compat[0]=%i, incompat[0]=%i, offset[0]=%li", compatFlags[0],
+                             incompatFlags[0], appendedOffsets[0]);
     }
 }

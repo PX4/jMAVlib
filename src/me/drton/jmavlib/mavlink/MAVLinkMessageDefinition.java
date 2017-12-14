@@ -52,6 +52,6 @@ public class MAVLinkMessageDefinition {
             }
         }
         int extraCRCRaw = MAVLinkCRC.calculateCRC(extraCRCStr.getBytes(Charset.forName("latin1")));
-        return (byte) ((extraCRCRaw & 0x00FF) ^ ((extraCRCRaw >> 8 & 0x00FF)));
+        return (byte)((extraCRCRaw & 0x00FF) ^ ((extraCRCRaw >> 8 & 0x00FF)));
     }
 }

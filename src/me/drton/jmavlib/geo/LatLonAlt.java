@@ -18,8 +18,8 @@ public class LatLonAlt {
 
     public LatLonAlt add(double[] vector) {
         return new LatLonAlt(
-                lat + vector[0] / RADIUS_OF_EARTH * 180.0 / Math.PI,
-                lon + vector[1] / (Math.cos(lat * Math.PI / 180.0) * RADIUS_OF_EARTH) * 180.0 / Math.PI,
-                alt - vector[2]);
+                   lat + vector[0] / RADIUS_OF_EARTH * 180.0 / Math.PI,
+                   lon + vector[1] / (Math.cos(lat * Math.PI / 180.0) * RADIUS_OF_EARTH) * 180.0 / Math.PI,
+                   alt - vector[2]);
     }
 }

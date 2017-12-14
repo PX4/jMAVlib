@@ -45,8 +45,9 @@ public class MessageFormat {
     }
 
     public void parseNestedTypes(final Map<String, MessageFormat> messageFormats) {
-        if (nestedParsingDone)
+        if (nestedParsingDone) {
             return;
+        }
         //we flatten all nested definitions, because the upper layers
         //do not support tree representations, only linear.
         ArrayList<FieldFormat> newFields = new ArrayList<FieldFormat>(fields.size());
@@ -59,16 +60,18 @@ public class MessageFormat {
                 m.parseNestedTypes(messageFormats);
                 String prefix = fields.get(i).name;
                 int arraySize = 1;
-                if (fields.get(i).isArray())
+                if (fields.get(i).isArray()) {
                     arraySize = fields.get(i).size;
+                }
                 for (int array = 0; array < arraySize; ++array) {
                     for (int k = 0; k < m.fields.size(); ++k) {
                         FieldFormat field = m.fields.get(k);
                         String arrayStr = "";
-                        if (arraySize > 1)
+                        if (arraySize > 1) {
                             arrayStr = "[" + String.valueOf(array) + "]";
+                        }
                         FieldFormat newFormat = new FieldFormat(prefix + arrayStr + "." + field.name, field.type,
-                                field.size);
+                                                                field.size);
                         newFields.add(newFormat);
                     }
                 }

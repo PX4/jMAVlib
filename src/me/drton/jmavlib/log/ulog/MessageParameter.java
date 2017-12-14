@@ -12,6 +12,7 @@ public class MessageParameter extends MessageInfo {
 
     @Override
     public String toString() {
-        return String.format("PARAMETER: key=%s, value_type=%s, value=%s", format.name, format.getFullTypeString(), value);
+        return String.format("PARAMETER: key=%s, value_type=%s, value=%s", format.name,
+                             format.getFullTypeString(), value);
     }
 }

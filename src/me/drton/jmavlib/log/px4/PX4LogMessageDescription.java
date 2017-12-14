@@ -11,7 +11,7 @@ public class PX4LogMessageDescription {
     private static Charset charset = Charset.forName("latin1");
 
     static PX4LogMessageDescription FORMAT = new PX4LogMessageDescription(0x80, 89, "FMT", "BBnNZ",
-            new String[]{"Type", "Length", "Name", "Format", "Labels"});
+                                                                          new String[] {"Type", "Length", "Name", "Format", "Labels"});
 
     public final int type;
     public final int length;
@@ -44,8 +44,9 @@ public class PX4LogMessageDescription {
         fields = fieldsStr.length() > 0 ? fieldsStr.split(",") : new String[0];
         if (!"FMT".equals(name)) {    // Workaround for buggy and useless APM "FMT" format
             if (fields.length != format.length()) {
-                throw new RuntimeException(String.format("Labels count != format length: name = \"%s\" fields = %s, format = \"%s\"",
-                        name, Arrays.asList(fields), format));
+                throw new RuntimeException(
+                    String.format("Labels count != format length: name = \"%s\" fields = %s, format = \"%s\"",
+                                  name, Arrays.asList(fields), format));
             }
             for (int i = 0; i < fields.length; i++) {
                 fieldsMap.put(fields[i], i);
@@ -103,7 +104,8 @@ public class PX4LogMessageDescription {
 
     @Override
     public String toString() {
-        return String.format("PX4LogMessageDescription: type=%s, length=%s, name=%s, format=%s, fields=%s", type,
-                length, name, format, Arrays.asList(fields));
+        return String.format("PX4LogMessageDescription: type=%s, length=%s, name=%s, format=%s, fields=%s",
+                             type,
+                             length, name, format, Arrays.asList(fields));
     }
 }

@@ -27,10 +27,11 @@ public class MAVLinkSchema {
     private ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
     private final MAVLinkMessageDefinition[] definitions = new MAVLinkMessageDefinition[256];
     private final Map<String, MAVLinkMessageDefinition> definitionsByName
-            = new HashMap<String, MAVLinkMessageDefinition>();
+        = new HashMap<String, MAVLinkMessageDefinition>();
     private DocumentBuilder xmlBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
-    public MAVLinkSchema(String xmlFileName) throws ParserConfigurationException, IOException, SAXException {
+    public MAVLinkSchema(String xmlFileName) throws ParserConfigurationException, IOException,
+        SAXException {
         processXMLFile(xmlFileName);
     }
 
@@ -38,7 +39,8 @@ public class MAVLinkSchema {
         return byteOrder;
     }
 
-    private void processXMLFile(String xmlFileName) throws IOException, SAXException, ParserConfigurationException {
+    private void processXMLFile(String xmlFileName) throws IOException, SAXException,
+        ParserConfigurationException {
         File xmlFile = new File(xmlFileName);
         xmlBuilder.reset();
         Document doc = xmlBuilder.parse(xmlFile);
@@ -55,7 +57,8 @@ public class MAVLinkSchema {
             processXMLFile(new File(xmlFile.getParentFile(), includeFile).getPath());
         }
 
-        NodeList msgElems = ((Element) root.getElementsByTagName("messages").item(0)).getElementsByTagName("message");
+        NodeList msgElems = ((Element) root.getElementsByTagName("messages").item(
+                                 0)).getElementsByTagName("message");
         for (int i = 0; i < msgElems.getLength(); i++) {
             Element msg = (Element) msgElems.item(i);
             int msgID = Integer.parseInt(msg.getAttribute("id"));
@@ -110,7 +113,8 @@ public class MAVLinkSchema {
             fields = sortedFields;
 
             if (msgID >= 0 && msgID < 256) {
-                addMessageDefinition(new MAVLinkMessageDefinition(msgID, msgName, fields.toArray(new MAVLinkField[numFields]), extensionIndex));
+                addMessageDefinition(new MAVLinkMessageDefinition(msgID, msgName,
+                                                                  fields.toArray(new MAVLinkField[numFields]), extensionIndex));
             }
         }
     }

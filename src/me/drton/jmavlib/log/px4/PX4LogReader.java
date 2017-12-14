@@ -18,7 +18,7 @@ public class PX4LogReader extends BinaryLogReader {
     private long dataStart = 0;
     private boolean formatPX4 = false;
     private Map<Integer, PX4LogMessageDescription> messageDescriptions
-            = new HashMap<Integer, PX4LogMessageDescription>();
+        = new HashMap<Integer, PX4LogMessageDescription>();
     private Map<String, String> fieldsList = null;
     private long time = 0;
     private PX4LogMessage lastMsg = null;
