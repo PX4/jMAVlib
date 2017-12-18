@@ -93,6 +93,7 @@ public class MAVLinkSchema {
             int numFields = fields.size();
 
             // as per mavparse.py: when we have extensions we only sort up to the first extended field
+            // Note: sortedFields is a view, so we do in-place sorting.
             List<MAVLinkField> sortedFields = fields.subList(0, extensionIndex);
             Collections.sort(sortedFields, new Comparator<MAVLinkField>() {
                 @Override
@@ -106,12 +107,6 @@ public class MAVLinkSchema {
                     return 0;
                 }
             });
-
-            // add the rest of the fields after the extension index.
-            for (int k = extensionIndex; k < numFields; k++) {
-                sortedFields.add(fields.get(k));
-            }
-            fields = sortedFields;
 
             // 0 to uint24 max (2^24)
             if (msgID >= 0 && msgID < 16777215) {
