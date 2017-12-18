@@ -104,7 +104,7 @@ public enum MAVLinkDataType {
         } else if ("uint64_t".equals(ctype)) {
             return UINT64;
         } else if ("int64_t".equals(ctype)) {
-            return INT16;
+            return INT64;
         } else if ("float".equals(ctype)) {
             return FLOAT;
         } else if ("double".equals(ctype)) {
