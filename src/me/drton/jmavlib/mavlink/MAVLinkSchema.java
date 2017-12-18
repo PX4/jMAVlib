@@ -25,7 +25,8 @@ import java.util.List;
  */
 public class MAVLinkSchema {
     private ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
-    private final MAVLinkMessageDefinition[] definitions = new MAVLinkMessageDefinition[256];
+    private final Map<Integer, MAVLinkMessageDefinition> definitionsByID
+        = new HashMap<Integer, MAVLinkMessageDefinition>();
     private final Map<String, MAVLinkMessageDefinition> definitionsByName
         = new HashMap<String, MAVLinkMessageDefinition>();
     private DocumentBuilder xmlBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -112,7 +113,8 @@ public class MAVLinkSchema {
             }
             fields = sortedFields;
 
-            if (msgID >= 0 && msgID < 256) {
+            // 0 to uint24 max (2^24)
+            if (msgID >= 0 && msgID < 16777215) {
                 addMessageDefinition(new MAVLinkMessageDefinition(msgID, msgName,
                                                                   fields.toArray(new MAVLinkField[numFields]), extensionIndex));
             }
@@ -120,7 +122,7 @@ public class MAVLinkSchema {
     }
 
     public MAVLinkMessageDefinition getMessageDefinition(int msgID) {
-        return definitions[msgID];
+        return definitionsByID.get(msgID);
     }
 
     public MAVLinkMessageDefinition getMessageDefinition(String msgName) {
@@ -132,7 +134,7 @@ public class MAVLinkSchema {
     }
 
     public void addMessageDefinition(MAVLinkMessageDefinition definition) {
-        definitions[definition.id] = definition;
+        definitionsByID.put(definition.id, definition);
         definitionsByName.put(definition.name, definition);
     }
 }
