@@ -118,8 +118,7 @@ public class MAVLinkMessage {
         if (definition == null) {
             // Unknown message skip it
             if (protocolVersion == 2) {
-                buffer.position(buffer.position() + payloadLen + CRC_LENGTH + getSignatureLength() +
-                                MAVLINK2_MSGID_EXTENSION + MAVLINK2_compatFlags_EXTENSION);
+                buffer.position(buffer.position() + payloadLen + CRC_LENGTH + getSignatureLength());
             } else {
                 buffer.position(buffer.position() + payloadLen + CRC_LENGTH);
             }
@@ -127,8 +126,7 @@ public class MAVLinkMessage {
         }
         if (protocolVersion == 2 &&
                 (payloadLen > definition.payloadLength)) {
-            buffer.position(buffer.position() + payloadLen + CRC_LENGTH + getSignatureLength() +
-                    MAVLINK2_MSGID_EXTENSION + MAVLINK2_compatFlags_EXTENSION);
+            buffer.position(buffer.position() + payloadLen + CRC_LENGTH + getSignatureLength());
             throw new MAVLinkUnknownMessage(
                 String.format("Invalid payload len for msg %s (%s): %s, should be %s to %s", definition.name, msgID,
                               payloadLen, definition.payloadMinimumLength, definition.payloadLength));
